@@ -10,6 +10,7 @@ pub enum TokenKind {
     Minus,  // -
 
     Program, // keyword `program`
+    Read,    // keyword `read`
 }
 
 #[derive(PartialEq, Eq, Debug)]

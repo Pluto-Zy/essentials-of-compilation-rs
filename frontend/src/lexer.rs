@@ -57,10 +57,10 @@ impl<'a> Lexer<'a> {
 
         let end_index = self.cur_value().unwrap_or((self.code.len(), 0)).0;
         (
-            if &self.code[start_index..end_index] == "program" {
-                TokenKind::Program
-            } else {
-                TokenKind::Unknown
+            match &self.code[start_index..end_index] {
+                "program" => TokenKind::Program,
+                "read" => TokenKind::Read,
+                _ => TokenKind::Unknown,
             },
             end_index - start_index,
         )
@@ -299,7 +299,7 @@ mod test {
 
     #[test]
     fn identifers() {
-        let code = "program Program pRogram xxx";
+        let code = "program read reAD  Program pRogram xxx";
         let lexer = Lexer::new(code);
 
         let result_tokens: Vec<_> = lexer.into_iter().collect();
@@ -311,13 +311,15 @@ mod test {
                 .collect::<Vec<_>>(),
             vec![
                 TokenKind::Program,
+                TokenKind::Read,
+                TokenKind::Unknown,
                 TokenKind::Unknown,
                 TokenKind::Unknown,
                 TokenKind::Unknown,
             ]
         );
 
-        let spellings = vec!["program", "Program", "pRogram", "xxx"];
+        let spellings = vec!["program", "read", "reAD", "Program", "pRogram", "xxx"];
         assert_eq!(
             result_tokens
                 .iter()
@@ -335,7 +337,7 @@ mod test {
             lens
         );
 
-        let start_locations = vec![0, 8, 16, 24];
+        let start_locations = vec![0, 8, 13, 19, 27, 35];
         assert_eq!(
             result_tokens
                 .iter()
