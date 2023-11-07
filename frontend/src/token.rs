@@ -13,7 +13,7 @@ pub enum TokenKind {
     Read,    // keyword `read`
 }
 
-#[derive(PartialEq, Eq, Debug)]
+#[derive(PartialEq, Eq, Debug, Clone)]
 pub struct Token<'a> {
     pub(crate) kind: TokenKind,
     pub(crate) spelling: &'a str,
