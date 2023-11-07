@@ -26,5 +26,5 @@ pub enum Expr {
 
 #[derive(Debug, Eq, PartialEq, Clone)]
 pub struct Program {
-    body: Expr,
+    pub body: Expr,
 }

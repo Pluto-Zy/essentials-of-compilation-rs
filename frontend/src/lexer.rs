@@ -2,13 +2,13 @@ use std::{iter::Enumerate, str::Bytes};
 
 use crate::token::{Token, TokenKind};
 
-pub struct Lexer<'a> {
+pub(crate) struct Lexer<'a> {
     cur: Enumerate<Bytes<'a>>,
     code: &'a str,
 }
 
 impl<'a> Lexer<'a> {
-    pub fn new(code: &'a str) -> Self {
+    pub(crate) fn new(code: &'a str) -> Self {
         Self {
             cur: code.bytes().enumerate(),
             code,
@@ -66,7 +66,7 @@ impl<'a> Lexer<'a> {
         )
     }
 
-    pub fn next_token(&mut self) -> Token<'a> {
+    pub(crate) fn next_token(&mut self) -> Token<'a> {
         // Consume the whitespaces.
         self.consume_while(|ch| ch.is_ascii_whitespace());
 

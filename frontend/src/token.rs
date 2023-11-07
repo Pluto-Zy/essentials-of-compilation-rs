@@ -1,5 +1,5 @@
 #[derive(Copy, Clone, Debug, Eq, PartialEq)]
-pub enum TokenKind {
+pub(crate) enum TokenKind {
     EOF,
     Unknown,
     Integer,
@@ -14,30 +14,30 @@ pub enum TokenKind {
 }
 
 #[derive(PartialEq, Eq, Debug, Clone)]
-pub struct Token<'a> {
+pub(crate) struct Token<'a> {
     pub(crate) kind: TokenKind,
     pub(crate) spelling: &'a str,
     pub(crate) location: usize,
 }
 
 impl<'a> Token<'a> {
-    pub fn token_kind(&self) -> TokenKind {
+    pub(crate) fn token_kind(&self) -> TokenKind {
         self.kind
     }
 
-    pub fn spelling(&self) -> &str {
+    pub(crate) fn spelling(&self) -> &str {
         self.spelling
     }
 
-    pub fn start_location(&self) -> usize {
+    pub(crate) fn start_location(&self) -> usize {
         self.location
     }
 
-    pub fn end_location(&self) -> usize {
+    pub(crate) fn end_location(&self) -> usize {
         self.start_location() + self.len()
     }
 
-    pub fn len(&self) -> usize {
+    pub(crate) fn len(&self) -> usize {
         self.spelling.len()
     }
 }
