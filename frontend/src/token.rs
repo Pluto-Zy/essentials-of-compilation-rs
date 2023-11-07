@@ -3,14 +3,18 @@ pub(crate) enum TokenKind {
     EOF,
     Unknown,
     Integer,
+    Identifier,
 
-    LParen, // (
-    RParen, // )
-    Plus,   // +
-    Minus,  // -
+    LParen,  // (
+    RParen,  // )
+    Plus,    // +
+    Minus,   // -
+    LSquare, // [
+    RSquare, // ]
 
     Program, // keyword `program`
     Read,    // keyword `read`
+    Let,     // keyword `let`
 }
 
 #[derive(PartialEq, Eq, Debug, Clone)]
