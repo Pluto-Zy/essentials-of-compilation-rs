@@ -2,26 +2,11 @@ use std::collections::HashMap;
 
 use frontend::Expr;
 
+use crate::NameGenerator;
+
 #[derive(Debug, Eq, PartialEq, Clone)]
 pub enum PassError {
     UnknownIdentifier(String),
-}
-
-struct NameGenerator {
-    prefix: String,
-    index: u32,
-}
-
-impl NameGenerator {
-    fn new(prefix: String) -> Self {
-        Self { prefix, index: 0 }
-    }
-
-    fn generate(&mut self) -> String {
-        let result = format!("{}{}", self.prefix, self.index);
-        self.index += 1;
-        result
-    }
 }
 
 struct UniquifyImpl {
