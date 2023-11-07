@@ -29,7 +29,7 @@ impl<'a> Token<'a> {
         self.kind
     }
 
-    pub(crate) fn spelling(&self) -> &str {
+    pub(crate) fn spelling(&self) -> &'a str {
         self.spelling
     }
 

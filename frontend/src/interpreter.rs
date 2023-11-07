@@ -93,6 +93,8 @@ pub fn interp_expr(expr: &Expr) -> Result<i64, InterpreterError> {
                 Ok(result)
             }
         }
+
+        _ => todo!(),
     }
 }
 

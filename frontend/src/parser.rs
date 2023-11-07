@@ -42,6 +42,32 @@ impl<'a> Parser<'a> {
         result
     }
 
+    fn expect_and_consume(&mut self, kind: TokenKind) -> Result<Token<'a>, ParseError> {
+        if self.cur_token.token_kind() == kind {
+            Ok(self.current_token_and_consume())
+        } else {
+            Err(ParseError {
+                kind: ParseErrorKind::UnexpectedToken(self.cur_token.spelling().to_string()),
+                location: self.cur_token.start_location(),
+            })
+        }
+    }
+
+    fn expect_closing_paren_and_consume(
+        &mut self,
+        kind: TokenKind,
+        open_token: &Token<'a>,
+    ) -> Result<Token<'a>, ParseError> {
+        if self.cur_token.token_kind() == kind {
+            Ok(self.current_token_and_consume())
+        } else {
+            Err(ParseError {
+                kind: ParseErrorKind::MismatchedOpenParen,
+                location: open_token.start_location(),
+            })
+        }
+    }
+
     fn parse_integer(&mut self) -> Result<u64, ParseError> {
         // eat the integer token
         let token = self.current_token_and_consume();
@@ -107,19 +133,44 @@ impl<'a> Parser<'a> {
         // Parse the body.
         let body = self.parse_expr();
         // eat the ')'
-        if let Token {
-            kind: TokenKind::RParen,
-            ..
-        } = self.cur_token
-        {
-            self.consume_token();
-            body
-        } else {
-            Err(ParseError {
-                kind: ParseErrorKind::MismatchedOpenParen,
-                location: lparen_token.start_location(),
-            })
-        }
+        self.expect_closing_paren_and_consume(TokenKind::RParen, &lparen_token)?;
+        body
+    }
+
+    fn parse_variable_declaration(&mut self) -> Result<(&'a str, Expr), ParseError> {
+        // Parse the `([var exp])` structure.
+
+        // eat the '('
+        let lparen_token = self.expect_and_consume(TokenKind::LParen)?;
+        // eat the '['
+        let lsquare_token = self.expect_and_consume(TokenKind::LSquare)?;
+
+        // parse the variable name
+        let variable_token = self.expect_and_consume(TokenKind::Identifier)?;
+        // parse the initialiazer
+        let initializer_expr = self.parse_expr()?;
+
+        // eat the ']'
+        let _ = self.expect_closing_paren_and_consume(TokenKind::RSquare, &lsquare_token)?;
+        // eat the ')'
+        let _ = self.expect_closing_paren_and_consume(TokenKind::RParen, &lparen_token)?;
+
+        Ok((variable_token.spelling(), initializer_expr))
+    }
+
+    fn parse_let_expr(&mut self) -> Result<Expr, ParseError> {
+        // eat the 'let' keyword
+        let _ = self.current_token_and_consume();
+        // Parse the variable declaration of the expression.
+        let (variable_name, init_expr) = self.parse_variable_declaration()?;
+        // Parse the body of the let expression.
+        let body = self.parse_expr()?;
+
+        Ok(Expr::Let {
+            variable_name: variable_name.to_string(),
+            init_expr: Box::new(init_expr),
+            body: Box::new(body),
+        })
     }
 
     fn parse_expr(&mut self) -> Result<Expr, ParseError> {
@@ -131,8 +182,12 @@ impl<'a> Parser<'a> {
                 self.consume_token();
                 Ok(Expr::Read)
             }
+            TokenKind::Identifier => Ok(Expr::Identifier(
+                self.current_token_and_consume().spelling().to_string(),
+            )),
             TokenKind::Plus | TokenKind::Minus => self.parse_multi_operands_expr(),
             TokenKind::LParen => self.parse_paren_expr(),
+            TokenKind::Let => self.parse_let_expr(),
             _ => Err(ParseError {
                 kind: ParseErrorKind::UnexpectedToken(String::from(token.spelling())),
                 location: token.start_location(),
@@ -231,6 +286,81 @@ mod test {
     }
 
     #[test]
+    fn parse_variable() {
+        assert_eq!(
+            parse_expr("(let ([x 1]) x)"),
+            Ok(Expr::Let {
+                variable_name: "x".to_string(),
+                init_expr: Box::new(Expr::Integer(1)),
+                body: Box::new(Expr::Identifier("x".to_string()))
+            })
+        );
+
+        assert_eq!(
+            parse_expr("(let ([x1 1]) x)"),
+            Ok(Expr::Let {
+                variable_name: "x1".to_string(),
+                init_expr: Box::new(Expr::Integer(1)),
+                body: Box::new(Expr::Identifier("x".to_string()))
+            })
+        );
+
+        assert_eq!(
+            parse_expr("(((let ([a1b (+ 12 20)]) (+ 10 x))))"),
+            Ok(Expr::Let {
+                variable_name: "a1b".to_string(),
+                init_expr: Box::new(Expr::BinaryOperation {
+                    kind: BinaryOpKind::Add,
+                    left_operand: Box::new(Expr::Integer(12)),
+                    right_operand: Box::new(Expr::Integer(20))
+                }),
+                body: Box::new(Expr::BinaryOperation {
+                    kind: BinaryOpKind::Add,
+                    left_operand: Box::new(Expr::Integer(10)),
+                    right_operand: Box::new(Expr::Identifier("x".to_string()))
+                })
+            })
+        );
+
+        assert_eq!(
+            parse_expr("(let ([x (32)]) (+ (let ([x 10]) x) (x)))"),
+            Ok(Expr::Let {
+                variable_name: "x".to_string(),
+                init_expr: Box::new(Expr::Integer(32)),
+                body: Box::new(Expr::BinaryOperation {
+                    kind: BinaryOpKind::Add,
+                    left_operand: Box::new(Expr::Let {
+                        variable_name: "x".to_string(),
+                        init_expr: Box::new(Expr::Integer(10)),
+                        body: Box::new(Expr::Identifier("x".to_string()))
+                    }),
+                    right_operand: Box::new(Expr::Identifier("x".to_string()))
+                })
+            })
+        );
+
+        assert_eq!(
+            parse_expr("(let ([x (read)]) (let ([y (read)]) (+ x (- y))))"),
+            Ok(Expr::Let {
+                variable_name: "x".to_string(),
+                init_expr: Box::new(Expr::Read),
+                body: Box::new(Expr::Let {
+                    variable_name: "y".to_string(),
+                    init_expr: Box::new(Expr::Read),
+                    body: Box::new(Expr::BinaryOperation {
+                        kind: BinaryOpKind::Add,
+                        left_operand: Box::new(Expr::Identifier("x".to_string())),
+                        right_operand: Box::new(Expr::UnaryOperation {
+                            kind: UnaryOpKind::Minus,
+                            operand: Box::new(Expr::Identifier("y".to_string()))
+                        })
+                    })
+                })
+            })
+        );
+    }
+
+    #[test]
     fn parse_error() {
         assert!(matches!(
             parse_expr("18446744073709551616"),
@@ -293,6 +423,30 @@ mod test {
             Err(ParseError {
                 kind: ParseErrorKind::UnexpectedToken(")".to_string()),
                 location: 3
+            })
+        );
+
+        assert_eq!(
+            parse_expr("let [x 10] 10"),
+            Err(ParseError {
+                kind: ParseErrorKind::UnexpectedToken("[".to_string()),
+                location: 4
+            })
+        );
+
+        assert_eq!(
+            parse_expr("let ([(x) 10]) 10"),
+            Err(ParseError {
+                kind: ParseErrorKind::UnexpectedToken("(".to_string()),
+                location: 6
+            })
+        );
+
+        assert_eq!(
+            parse_expr("let ([x 1 2]) 10"),
+            Err(ParseError {
+                kind: ParseErrorKind::MismatchedOpenParen,
+                location: 5
             })
         );
     }
