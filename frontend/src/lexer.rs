@@ -60,7 +60,8 @@ impl<'a> Lexer<'a> {
             match &self.code[start_index..end_index] {
                 "program" => TokenKind::Program,
                 "read" => TokenKind::Read,
-                _ => TokenKind::Unknown,
+                "let" => TokenKind::Let,
+                _ => TokenKind::Identifier,
             },
             end_index - start_index,
         )
@@ -78,6 +79,8 @@ impl<'a> Lexer<'a> {
                     b')' => (TokenKind::RParen, 1),
                     b'+' => (TokenKind::Plus, 1),
                     b'-' => (TokenKind::Minus, 1),
+                    b'[' => (TokenKind::LSquare, 1),
+                    b']' => (TokenKind::RSquare, 1),
                     ch if ch.is_ascii_digit() => self.handle_integer_literal(index),
                     ch if ch.is_ascii_alphabetic() => self.handle_identifier(index),
                     _ => (TokenKind::Unknown, 1),
@@ -239,7 +242,7 @@ mod test {
 
     #[test]
     fn operators() {
-        let code = ")(+- ) -*";
+        let code = ")(+- ) -[* [ ]]";
         let lexer = Lexer::new(code);
 
         let result_tokens: Vec<_> = lexer.into_iter().collect();
@@ -256,11 +259,15 @@ mod test {
                 TokenKind::Minus,
                 TokenKind::RParen,
                 TokenKind::Minus,
+                TokenKind::LSquare,
                 TokenKind::Unknown,
+                TokenKind::LSquare,
+                TokenKind::RSquare,
+                TokenKind::RSquare,
             ]
         );
 
-        let spellings = vec![")", "(", "+", "-", ")", "-", "*"];
+        let spellings = vec![")", "(", "+", "-", ")", "-", "[", "*", "[", "]", "]"];
         assert_eq!(
             result_tokens
                 .iter()
@@ -269,7 +276,7 @@ mod test {
             spellings
         );
 
-        let lens = vec![1; 7];
+        let lens = vec![1; 11];
         assert_eq!(
             result_tokens
                 .iter()
@@ -278,7 +285,7 @@ mod test {
             lens
         );
 
-        let start_locations = vec![0, 1, 2, 3, 5, 7, 8];
+        let start_locations = vec![0, 1, 2, 3, 5, 7, 8, 9, 11, 13, 14];
         assert_eq!(
             result_tokens
                 .iter()
@@ -298,8 +305,8 @@ mod test {
     }
 
     #[test]
-    fn identifers() {
-        let code = "program read reAD  Program pRogram xxx";
+    fn identifiers() {
+        let code = "program read reAD  Program pRogram xxx let arg";
         let lexer = Lexer::new(code);
 
         let result_tokens: Vec<_> = lexer.into_iter().collect();
@@ -312,14 +319,18 @@ mod test {
             vec![
                 TokenKind::Program,
                 TokenKind::Read,
-                TokenKind::Unknown,
-                TokenKind::Unknown,
-                TokenKind::Unknown,
-                TokenKind::Unknown,
+                TokenKind::Identifier,
+                TokenKind::Identifier,
+                TokenKind::Identifier,
+                TokenKind::Identifier,
+                TokenKind::Let,
+                TokenKind::Identifier,
             ]
         );
 
-        let spellings = vec!["program", "read", "reAD", "Program", "pRogram", "xxx"];
+        let spellings = vec![
+            "program", "read", "reAD", "Program", "pRogram", "xxx", "let", "arg",
+        ];
         assert_eq!(
             result_tokens
                 .iter()
@@ -337,7 +348,7 @@ mod test {
             lens
         );
 
-        let start_locations = vec![0, 8, 13, 19, 27, 35];
+        let start_locations = vec![0, 8, 13, 19, 27, 35, 39, 43];
         assert_eq!(
             result_tokens
                 .iter()
