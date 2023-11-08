@@ -85,19 +85,32 @@ impl RCOImpl {
             UnaryOperation { kind, operand } => {
                 let (operand, subexpr_list) = self.rco_atom(*operand);
 
-                let mut body = Expr::UnaryOperation {
-                    kind,
-                    operand: Box::new(operand),
-                };
-                for (variable_name, init_expr) in subexpr_list.into_iter().rev() {
-                    body = Expr::Let {
+                // The following code is equivalent to
+                //
+                // let mut body = UnaryOperation {
+                //     kind,
+                //     operand: Box::new(operand),
+                // };
+                // for (variable_name, init_expr) in subexpr_list.into_iter().rev() {
+                //     body = Let {
+                //         variable_name,
+                //         init_expr: Box::new(init_expr),
+                //         body: Box::new(body),
+                //     };
+                // }
+                //
+                // body
+                subexpr_list.into_iter().rev().fold(
+                    UnaryOperation {
+                        kind,
+                        operand: Box::new(operand),
+                    },
+                    |body, (variable_name, init_expr)| Let {
                         variable_name,
                         init_expr: Box::new(init_expr),
                         body: Box::new(body),
-                    };
-                }
-
-                body
+                    },
+                )
             }
 
             BinaryOperation {
@@ -108,24 +121,42 @@ impl RCOImpl {
                 let (left_operand, left_subexpr_list) = self.rco_atom(*left_operand);
                 let (right_operand, right_subexpr_list) = self.rco_atom(*right_operand);
 
-                let mut body = Expr::BinaryOperation {
-                    kind,
-                    left_operand: Box::new(left_operand),
-                    right_operand: Box::new(right_operand),
-                };
-                for (variable_name, init_expr) in right_subexpr_list
+                // The following code is equivalent to
+                //
+                // let mut body = Expr::BinaryOperation {
+                //     kind,
+                //     left_operand: Box::new(left_operand),
+                //     right_operand: Box::new(right_operand),
+                // };
+                // for (variable_name, init_expr) in right_subexpr_list
+                //     .into_iter()
+                //     .rev()
+                //     .chain(left_subexpr_list.into_iter().rev())
+                // {
+                //     body = Expr::Let {
+                //         variable_name,
+                //         init_expr: Box::new(init_expr),
+                //         body: Box::new(body),
+                //     };
+                // }
+                //
+                // body
+                right_subexpr_list
                     .into_iter()
                     .rev()
                     .chain(left_subexpr_list.into_iter().rev())
-                {
-                    body = Expr::Let {
-                        variable_name,
-                        init_expr: Box::new(init_expr),
-                        body: Box::new(body),
-                    };
-                }
-
-                body
+                    .fold(
+                        BinaryOperation {
+                            kind,
+                            left_operand: Box::new(left_operand),
+                            right_operand: Box::new(right_operand),
+                        },
+                        |body, (variable_name, init_expr)| Expr::Let {
+                            variable_name,
+                            init_expr: Box::new(init_expr),
+                            body: Box::new(body),
+                        },
+                    )
             }
 
             Let {
@@ -163,6 +194,32 @@ mod test {
             remove_complex_operands(parse_expr("let ([a 42]) (let ([b a]) b)").unwrap())
                 .to_string(),
             "(let ([a 42]) (let ([b a]) b))"
+        );
+
+        assert_eq!(
+            parse_expr(
+                &remove_complex_operands(
+                    parse_expr("+ (+ (- 3) (+ 1 (- 2))) (- (+ 1 2) (- 1))").unwrap()
+                )
+                .to_string()
+            ),
+            parse_expr(
+                r#" (let ([tmp0 (- 3)])
+                        (let ([tmp1 (- 2)])
+                            (let ([tmp2 (+ 1 tmp1)])
+                                (let ([tmp3 (+ tmp0 tmp2)])
+                                    (let ([tmp4 (+ 1 2)])
+                                        (let ([tmp5 (- 1)])
+                                            (let ([tmp6 (- tmp4 tmp5)])
+                                                (+ tmp3 tmp6)
+                                            )
+                                        )
+                                    )
+                                )
+                            )
+                        )
+                    )"#
+            )
         );
     }
 }
