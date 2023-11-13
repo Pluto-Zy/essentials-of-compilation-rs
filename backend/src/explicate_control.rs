@@ -81,7 +81,7 @@ impl ExplicateImpl {
     }
 }
 
-fn explicate_control(expr: LExpr) -> CProgram {
+pub(crate) fn explicate_control(expr: LExpr) -> CProgram {
     ExplicateImpl::new().explicate_tail(expr).result_program
 }
 

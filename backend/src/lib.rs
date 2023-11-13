@@ -1,6 +1,7 @@
 mod explicate_control;
 mod ir;
 mod remove_complex_operands;
+mod select_instructions;
 mod uniquify;
 
 pub(crate) struct NameGenerator {
