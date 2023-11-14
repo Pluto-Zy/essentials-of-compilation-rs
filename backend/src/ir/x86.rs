@@ -101,7 +101,7 @@ impl Display for VarArg {
         match self {
             Imm(value) => write!(f, "$0x{:x}", value),
             Reg(reg) => write!(f, "{}", reg),
-            Deref(reg, offset) => write!(f, "{:x}({})", offset, reg),
+            Deref(reg, offset) => write!(f, "{}({})", offset, reg),
             Variable(name) => write!(f, "{}", name),
         }
     }

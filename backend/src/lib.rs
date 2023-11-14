@@ -1,3 +1,4 @@
+mod assign_homes;
 mod explicate_control;
 mod ir;
 mod remove_complex_operands;
