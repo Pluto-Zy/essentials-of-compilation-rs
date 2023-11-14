@@ -108,7 +108,7 @@ start:
             )
             .to_string(),
             r#"
-local: ["x1", "x2", "y"]
+local: [x1, x2, y]
 start:
     x1 = 20;
     x2 = 22;
@@ -141,7 +141,7 @@ start:
             )
             .to_string(),
             r#"
-local: ["tmp0", "tmp1", "tmp2", "tmp3", "tmp4", "tmp5", "tmp6"]
+local: [tmp0, tmp1, tmp2, tmp3, tmp4, tmp5, tmp6]
 start:
     tmp0 = (- 3);
     tmp1 = (- 2);

@@ -56,6 +56,7 @@ impl<ArgType> Block<ArgType> {
 
 #[derive(Debug, Eq, PartialEq, Clone)]
 pub struct Program<ArgType> {
+    pub local_variables: Vec<String>,
     pub body: Vec<Block<ArgType>>,
 }
 
@@ -63,7 +64,10 @@ pub type VarProgram = Program<VarArg>;
 
 impl<ArgType> Program<ArgType> {
     pub fn new() -> Self {
-        Self { body: Vec::new() }
+        Self {
+            local_variables: Vec::new(),
+            body: Vec::new(),
+        }
     }
 }
 
@@ -131,6 +135,10 @@ impl<ArgType: Display> Display for Block<ArgType> {
 
 impl<ArgType: Display> Display for Program<ArgType> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        if !self.local_variables.is_empty() {
+            writeln!(f, "locals: [{}]", self.local_variables.join(", "))?;
+        }
+
         self.body
             .iter()
             .try_for_each(|block| write!(f, "{}", block))

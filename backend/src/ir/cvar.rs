@@ -143,7 +143,7 @@ impl Display for Stmt {
 impl Display for Program {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         if !self.locals.is_empty() {
-            writeln!(f, "local: {:?}", self.locals)?;
+            writeln!(f, "local: [{}]", self.locals.join(", "))?;
         }
 
         writeln!(f, "start:")?;

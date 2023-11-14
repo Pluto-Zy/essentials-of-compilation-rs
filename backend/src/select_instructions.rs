@@ -123,6 +123,7 @@ impl SelectInstrImpl {
 
         self.result_program.body.push(main_block);
         self.result_program.body.push(conclusion_block);
+        self.result_program.local_variables = program.locals;
 
         self
     }
@@ -155,6 +156,7 @@ mod test {
             .to_string()
             .trim(),
             r#"
+locals: [x1, x2, y]
 main:
     movq    $0x14, x1
     negq    x1
@@ -175,6 +177,7 @@ conclusion:
             .to_string()
             .trim(),
             r#"
+locals: [x1, x2]
 main:
     callq   read_int
     movq    %rax, x1
