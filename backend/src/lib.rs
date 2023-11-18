@@ -1,6 +1,7 @@
 mod assign_homes;
 mod explicate_control;
 mod ir;
+mod patch_instructions;
 mod remove_complex_operands;
 mod select_instructions;
 mod uniquify;
